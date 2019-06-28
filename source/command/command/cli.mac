@@ -622,7 +622,7 @@ EXPAND:		LD	B,A		; Save parameter number, 1 => %0.
 EXP10:		CALL	RDCHAR		; Get next character.
 		JR	NZ,EXP20	; Put straight in buffer if in quotes.
 ;
-		CP	'"'		; Ignore quotes.
+		CP	34		; Ignore quotes.
 		JR	Z,EXP10
 ;
 		CP	'/'		; Make sure / options are separate
