@@ -485,6 +485,29 @@ GDRV_OK_ROM:
 ; primary controller); if found and its contents are valid, the whole
 ; assignment procedure is aborted and we enter disk emulation mode.
 
+	;We disable the PROMPT routine temporarily while AUTODRV runs,
+	;since we don't want it to be run when devices are read to search for partitions.
+	;The prompt routine is disabled by placing two INC SP instructions
+	;in the hook, so that the routine terminates immediately.
+
+	ld a,(H.PROMPT##)
+	push af
+	ld hl,(H.PROMPT##+1)
+	push hl
+	ld hl,3333h ;"INC SP" x 2
+	ld (H.PROMPT##),hl
+	ld a,0C9h ;"RET"
+	ld (H.PROMPT##+2),a
+
+	call _AUTODRV
+
+	pop hl
+	ld (H.PROMPT##+1),hl
+	pop af
+	ld (H.PROMPT##),a
+	ret
+
+_AUTODRV:
 	ld	hl,0
 	add	hl,sp
 	ld	(SPSAVE##),hl
@@ -660,7 +683,7 @@ AUTODRV_END:
 
 AUTODRV_DOS2:
 	ld	hl,UNIT_TAB##+2
-	ld	b,MAX_UNITS##
+	ld	b,MAX_UNITS
 AUTOD_LOOP:
 	ld	e,(hl)
 	inc	hl
@@ -739,7 +762,6 @@ AUTOD_UDFND2:
 	or a
 	jr z,AUTOD_OK
 	set UF_PAP,(ix+UD_DFLAGS##) ;Partition will be assigned on first access
-	set UF_NCH,(ix+UD_DFLAGS##)
 	jr	AUTOD_OK
 
 AUTOD_UDFND3:
@@ -801,7 +823,7 @@ SETNUMDRV:
 	push	af
 
 	ld	hl,UNIT_TAB##+2
-	ld	b,MAX_UNITS##
+	ld	b,MAX_UNITS
 	ld	c,0
 SETNUMD_LOOP:
 	ld	e,(hl)
@@ -831,18 +853,19 @@ SETNUMD_NOUD:
 ; AUTO_ASSIGN
 ;
 ; This routine automatically assigns the appropriate device and partition
-; to a drive associated to a device-based DOS 2.50 driver. It does so by
-; searching an available block devices, then searching a FAT12 or FAT16
+; to a drive associated to a device-based Nextor driver. It does so by
+; searching an available block device, then searching a FAT12 or FAT16
 ; partition (unless the MBR has no partition table), the checking the
 ; validity of the FAT boot sector. Other existing unit descriptors
 ; are checked to ensure that the same device and LUN is not assigned
 ; to more than one drive.
 ;
-; If there is a device whose first partition is a properly formatted FAT12
-; or FAT16 partition, which has a file named NEXTOR.DAT in the root
-; directory, then this device will be assigned regardless of its device
-; number. If there are more than one devices matching this, the one
-; with the smallest device number will be assigned.
+; If there is a device having a partition that is properly formatted in FAT12
+; or FAT16 and has the "active" flag set (the MSB of the first byte
+; of the partition table entry), then this device and that partition will be assigned
+; regardless of the device number. If there are more than one devices matching this, 
+; the one with the smallest device number will be assigned. If there are multiple
+; active partitions in the same device, the first one found will be assigned.
 ;
 ; There is also a second entry point, AUTO_ASPART.
 ; The difference is that this one searches for a suitable partition,
@@ -863,7 +886,7 @@ SETNUMD_NOUD:
 ;              1: No suitable device/partition found
 ;              2: Disk emulation mode was entered
 
-;CURR = current deivce/partition being examined
+;CURR = current device/partition being examined
 ;CAND = candidate device/partition, will be assigned if no one has the active flag set in status byte
 
 AAD_UNIT_DESCRIPTOR equ 0
@@ -1003,7 +1026,7 @@ AA_CHKDUP_NEXT1:
 
 AA_CHKDUP_DOS2:
 	ld	hl,UNIT_TAB##+2
-	ld	b,MAX_UNITS##
+	ld	b,MAX_UNITS
 
 AA_CHKDUP_LOOP:
 	push	bc
@@ -1076,6 +1099,11 @@ AA_CHKDUP_OK:
 	inc	hl
 	inc	hl
 	ld	a,(hl)	;Flags
+	bit AAFLAG_IS_AUTOASPART,(ix+AAD_FLAGS)
+	jr nz,AA_NO_SKIP_AUTOMAP
+	bit 3,a
+	jp  nz,AA_LLOOP_NEXT	;Device should not be used for automapping
+AA_NO_SKIP_AUTOMAP:	
 	and	1
 	rrca
 	ld	d,a	;Save removable device flag for later
@@ -2207,7 +2235,7 @@ GDRVR_NAME_LOOP:
 
 F_GDLI_GO:
 	ld	a,c
-	cp	MAX_UNITS##
+	cp	MAX_UNITS
 	ld	a,.IDRV##
 	ret	nc
 
@@ -2577,7 +2605,7 @@ GSLT_SLTTBL:
 	push	hl
 	pop	iy
 	ld	hl,UNIT_TAB##+2
-	ld	b,MAX_UNITS##
+	ld	b,MAX_UNITS
 UNMAP_LOOP:
 	push	hl
 	push	bc
@@ -2701,7 +2729,7 @@ F_MAPDRV_GO:
 
 FMPDRV2:
 	ld	a,c
-	cp	MAX_UNITS##
+	cp	MAX_UNITS
 	ld	a,.IDRV##
 	ret	nc
 
@@ -4119,7 +4147,7 @@ Z80MODE_SET_OF_LOOP:
 
 Z80MODE_SETUDS:
 	ld	ix,UNIT_TAB##+2
-	ld	b,MAX_UNITS##
+	ld	b,MAX_UNITS
 Z80_SETUDS_LOOP:
 	ld	l,(ix)
 	ld	h,(ix+1)
@@ -6058,7 +6086,7 @@ CMIU_DOS2:
 	push ix
 
 	ld	iy,UNIT_TAB##+2
-	ld	b,MAX_UNITS##
+	ld	b,MAX_UNITS
 CMIU_CHECK:
 
 	pop	de	;Target unit descriptor pointer

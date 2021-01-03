@@ -1,4 +1,8 @@
 	.xlist
+
+MAX_UNITS	equ 	8	;Maximum number of total drives
+CHGBNK		equ		7FD0h	;Address of the bank change routine
+
 ;
 ;------------------------------------------------------------------------------
 ;
@@ -243,7 +247,6 @@ UF_HPL	equ	1	;Set => device supports hot-plug
 UF_RMV	equ	2	;Set => drive assigned to a removable device
 UF_PAP	equ	3	;Set => drive is pending partition assignment
 UF_FOK	equ	4	;Set => value at UD_FSEC is valid
-UF_NCH  equ 5   ;Set => discard next device change status and return "not changed"
 ;
 ;
 ;         MASKS FOR "UD_DFLAGS" BITS

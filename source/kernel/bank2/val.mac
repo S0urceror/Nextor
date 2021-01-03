@@ -993,27 +993,6 @@ MEDIA_CHECK:
 		ret
 
 MCHK0:
-		call MCHK2
-
-		push ix
-		push af
-
-		push hl
-		pop ix
-		bit UF_NCH,(ix+UD_DFLAGS##)
-		jr z,MCHK1
-
-		res UF_NCH,(ix+UD_DFLAGS##)
-		ex	(sp),hl	;retrieve pushed AF
-		set 6,l		;set Z to force "not changed"
-		ex  (sp),hl
-MCHK1:
-		pop af
-		pop ix
-		ret
-
-MCHK2:
-
 		call	_MCHECK
 		ret	z
 		ret	nc	;If not "not sure interpret as changed", return
@@ -2176,7 +2155,16 @@ upb_dos220:
 ;
 		ld	a,(ix+UPB_MBYTE##)	;Copy MEDIA DESCRIPTOR BYTE
 						; from UPB to unit descriptor
-new_upb_fat12:	ld	(hl),a
+        ld	(hl),a
+
+		pop hl
+		push hl
+		ld bc,UD_ACLU##
+		add hl,bc  
+		ld (hl),1     ;Initialize next cluster to check for allocation to 2
+		inc hl        ;(it's stored as value-1)
+		ld (hl),0
+
 		pop	hl
 
 		;--- If drive is FAT16, calculate reduced cluster count
@@ -2225,14 +2213,14 @@ reduce_set:
 		;          and compiles always the else clause.
 		;          Solve this if MAX_UNITS needs to grow over 8.
 
-;if MAX_UNITS## GT 8
+;if MAX_UNITS GT 8
 ;		ld	hl,(RALL_VECT##)
 ;else
 		ld	a,(RALL_VECT##)
 ;endif
 
 reduce_bit_loop:
-;if MAX_UNITS## GT 8
+;if MAX_UNITS GT 8
 ;		srl	h
 ;		rr	l
 ;else
@@ -2483,7 +2471,19 @@ CUN_RW:
 		push	bc
 		exx
 		push	bc
+		exx
+		ld de,(RW_PSEC##)
+		push de
+		ld de,(RW_DTA##)
+		push de
+		exx
 		call	CUN_RW2
+		exx
+		pop de
+		ld (RW_DTA##),de
+		pop de
+		ld (RW_PSEC##),de
+		exx
 		pop	bc
 		exx
 		pop	bc
@@ -3175,7 +3175,7 @@ CLDRV_RET_NOZ80:
 ; Corrupts:  AF,BC,DE,HL
 ;
 ;
-		ld	b,MAX_UNITS##
+		ld	b,MAX_UNITS
 zap_all_loop:	ld	a,b			;Get logical unit number
 		call	LG_TO_PHYS		;Get pointer to UNIT_TAB entry
 		ld	e,(hl)			; for this unit and see if it
@@ -3223,7 +3223,7 @@ no_zap_unit:	djnz	zap_all_loop		;Loop 'til done all units
 		ld	a,(CUR_DRV##)		; drive.
 not_default:
 		ld	c,.IDRV##		;Anticipate error code.
-		cp	MAX_UNITS##+1		;If unit number is too big
+		cp	MAX_UNITS+1		;If unit number is too big
 		jr	c,log_unit_ok		; then force it to zero.
 		xor	a
 log_unit_ok:
@@ -3260,7 +3260,7 @@ if 0
 ;
 ;
 		ld	hl,UNIT_TAB##+2		;Look through each entry
-		ld	b,MAX_UNITS##		; in UNIT_TAB in turn.
+		ld	b,MAX_UNITS		; in UNIT_TAB in turn.
 ud_tick_loop:	ld	e,(hl)
 		inc	hl
 		ld	d,(hl)
@@ -3338,7 +3338,7 @@ fat_not_invalid:
 		push	ix
 		ld	c,a
 		ld	hl,UNIT_TAB##+2		;Look through each entry
-		ld	b,MAX_UNITS##		; in UNIT_TAB in turn.
+		ld	b,MAX_UNITS		; in UNIT_TAB in turn.
 ud_tick_loop:	ld	e,(hl)
 		inc	hl
 		ld	d,(hl)
@@ -3404,7 +3404,7 @@ CALL4_PRESERVE_ALT:
     exx
 
 	ld	(BK4_ADD##),ix
-	ld	ix,?C4PBK##
+	ld	ix,C4PBK##
 	ld	iy,(MASTER_SLOT##-1)
 	call	CALSLT##
 
