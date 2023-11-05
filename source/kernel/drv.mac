@@ -485,10 +485,8 @@ DIO_RD_LOOP:
 	ex	af,af'
 	ld	a,DV_BANK##
 	call	CALBNK##
-	; fix by S0urceror
 	and a
 	jr	z,DIO_RD_OK
-	; end of fix
 
 	pop	hl	;On disk error, just return
 	pop	de
@@ -542,10 +540,8 @@ DIO_WR_LOOP:
 	ex	af,af'
 	ld	a,DV_BANK##
 	call	CALBNK##
-	; fix by S0urceror
 	and a
-	jr	z,DIO_RD_OK
-	; end of fix
+	jr	z,DIO_WR_OK
 
 	pop	de	;On disk error, just return
 	pop	bc

@@ -35,9 +35,9 @@
 extern void _ultoa(long val, char* buffer, char base);
 extern void _ltoa(long val, char* buffer, char base);
 #endif
-// changed in SDCC 4.x
-extern void __uitoa(int val, char* buffer, char base);
-extern void __itoa(int val, char* buffer, char base);
+
+extern void _uitoa(int val, char* buffer, char base);
+extern void _itoa(int val, char* buffer, char base);
 
 static int format_string(const char* buf, const char *fmt, va_list ap);
 
@@ -175,20 +175,20 @@ static int format_string(const char* buf, const char *fmt, va_list ap)
       val = va_arg(ap, int);
 
     if(isUnsigned && isLong)
-      __ultoa(val, buffer, base);
+      _ultoa(val, buffer, base);
     else if(isUnsigned)
-      __uitoa(val, buffer, base);
+      _uitoa(val, buffer, base);
     else if(isLong)
-      __ltoa(val, buffer, base);
+      _ltoa(val, buffer, base);
     else
-      __itoa(val, buffer, base);
+      _itoa(val, buffer, base);
 #else
     val = va_arg(ap, int);
     
     if(isUnsigned)
-      __uitoa(val, buffer, base);
+      _uitoa(val, buffer, base);
     else
-      __itoa(val, buffer, base);
+      _itoa(val, buffer, base);
 #endif
 
     strPnt = buffer;
