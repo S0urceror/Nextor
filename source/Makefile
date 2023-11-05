@@ -3,7 +3,6 @@
 # The generated files will be copied to bin/kernels and bin/tools.
 # The makefiles on each directory can be used independently as well.
 
-
 all:
 	$(MAKE) -C kernel
 	$(MAKE) -C command/msxdos

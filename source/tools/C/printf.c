@@ -35,7 +35,6 @@
 extern void _ultoa(long val, char* buffer, char base);
 extern void _ltoa(long val, char* buffer, char base);
 #endif
-
 extern void _uitoa(int val, char* buffer, char base);
 extern void _itoa(int val, char* buffer, char base);
 
