@@ -486,9 +486,19 @@ DIO_RD_LOOP:
 	ex	af,af'
 	ld	a,DV_BANK##
 	call	CALBNK##
+	push af ; preserve A and flags
+	ld	a,(KSLOT##)
 	and a
-	jr	z,DIO_RD_OK
-
+	jr z, DIO_RD_DRIVE_BASED
+	; device based
+	pop af ; restore error code
+	and a
+	jr z,DIO_RD_OK
+	jr DIO_RD_ERR
+DIO_RD_DRIVE_BASED:
+	pop af ; restore error code and flags
+	jr nc, DIO_RD_OK
+DIO_RD_ERR:
 	pop	hl	;On disk error, just return
 	pop	de
 	pop	bc
